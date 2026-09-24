@@ -1,0 +1,12 @@
+지후배틀 시작하기
+
+웹에서 플레이: https://sebonalt3.github.io/JIHOOBATTLE/
+저장소의 index.html이 게임 첫 화면입니다.
+
+초상화와 수치가 표시되려면 index.html, character-balance.js, portraits 폴더를
+저장소 루트에 함께 두어야 합니다. GitHub Pages에는 이 세 항목이 같이 게시됩니다.
+
+현재 버전: 3.0.1. 버전명과 인게임 패치노트는 릴리스 시 함께 갱신합니다.
+온라인 계정·리더보드는 Firebase 프로젝트 연결과 Firestore 규칙 게시 후 활성화됩니다.
+닉네임과 비밀번호(6~32자)는 필수이며, 8자리 UID는 자동으로 배정됩니다. 다른 기기에서는 UID와 비밀번호로 로그인해 백업을 복원합니다.
+이전 수정용 사본은 jihoobattle-editable-fixed 폴더에 보관되어 있습니다.
