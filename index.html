@@ -1531,6 +1531,10 @@ body.reduce-motion *, body.reduce-motion *::before, body.reduce-motion *::after 
 @keyframes gacha-hidden-black { 0% { background:rgba(0,0,0,0); } 35%,100% { background:#000; } }
 .unit.mimic-original .unit-icon { animation:mimic-rainbow 4s linear infinite; border-radius:50%; }
 @keyframes mimic-rainbow { 0% { filter:hue-rotate(0deg); box-shadow:0 0 16px #f44; } 50% { filter:hue-rotate(180deg); box-shadow:0 0 16px #58f; } 100% { filter:hue-rotate(360deg); box-shadow:0 0 16px #f44; } }
+/* 변신한 미믹은 초상화를 바꾸되, 바깥 무지개 고리로 정체를 표시한다. */
+.unit.mimic-transformed::before { content:''; position:absolute; inset:-7px; border-radius:50%; background:conic-gradient(#ff3838,#ff9b32,#fff04a,#43e56d,#42bbff,#6556e8,#bc58e7,#ff3838); pointer-events:none; animation:mimic-ring-blink .85s ease-in-out infinite alternate; }
+.unit.mimic-transformed .unit-icon { z-index:1; }
+@keyframes mimic-ring-blink { from { opacity:.28; } to { opacity:1; } }
 /* 행성의 위성 지후는 독립된 초상화를 사용하며 미니 지후(48px)와 같은 크기다. */
 .fx-orbit-satellite { position:absolute; width:48px; height:48px; border-radius:50%; overflow:hidden; background:#282b5e; border:2px solid #fff; box-shadow:0 0 12px #a8a9ff; transform:translate(-50%,-50%); pointer-events:none; z-index:9; }
 .fx-orbit-satellite img { display:block; width:100%; height:100%; object-fit:cover; }
@@ -1942,9 +1946,6 @@ html[data-theme="light"] .settlement-heading,html[data-theme="light"] .settlemen
 html[data-theme="light"] .settlement-heading b,html[data-theme="light"] .settlement-row b.loss,html[data-theme="light"] .settlement-note { color:#555; }
 html[data-theme="light"] .settlement-progress { background:#ddd; }html[data-theme="light"] .settlement-progress span { background:#222; }
 html[data-theme="light"] .settlement-row { color:#444;border-color:#bbb; }
-#battleWorld.enemy-concealed .enemy-unit, #battleWorld.enemy-concealed .zone-label-enemy { visibility:hidden !important; }
-#battleWorld.enemy-concealed::after { content:'상대 배치 비공개'; position:absolute; left:0; top:0; width:100%; height:50%; display:grid; place-items:center; background:rgba(12,12,12,.86); color:#eee; font-size:24px; font-weight:900; letter-spacing:.12em; z-index:30; pointer-events:none; }
-#battleWorld.enemy-concealed.layout-ew::after { width:50%; height:100%; }
 .unit.ally-unit .unit-hpbar { background:#32c979 !important; }
 .unit.enemy-unit .unit-hpbar { background:#eb5966 !important; }
 .leaderboard-entry { display:grid; grid-template-columns:48px minmax(0,1fr) auto; gap:10px 14px; padding:15px; border-radius:12px; }
@@ -2706,8 +2707,8 @@ const CHARACTER_BALANCE = {
     blizzardAtkPenalty: 0.25, blizzardSpeedPenalty: 0.50
   },
   beam: {
-    hp: 1500, atk: 100, atkSpeed: 0.2, range: 247.5, speed: 90,
-    beamWarmup: 4, beamInterval: 0.2, beamRampInterval: 1, beamRampDamage: 20
+    hp: 1500, atk: 50, atkSpeed: 0.2, range: 247.5, speed: 90,
+    beamWarmup: 4, beamInterval: 0.2, beamRampInterval: 2, beamRampDamage: 10
   },
   mutation: {
     hp: 1000, atk: 100, atkSpeed: 2, range: 135, speed: 67.5,
@@ -3131,7 +3132,7 @@ const CHAR_DB = {
     id: 'medic', name: '힐 지후', emoji: '💉', role: 'support', roleLabel: '서포터',
     rarity: 'common', color: '#4ae0c4', portrait: PORTRAITS.medic,
     ...CHARACTER_BALANCE.medic,
-    skillDesc: '아군을 타겟팅해 <b>160° 부채꼴 사거리 4</b> 안의 아군을 각 <b>1200</b>씩 회복 (쿨 <b>3초</b>)',
+    skillDesc: '아군을 타겟팅해 <b>160° 부채꼴 사거리 4</b> 안의 아군을 각 <b>1200</b>씩 회복 (쿨 <b>3초</b>). 자신은 회복량의 <b>10%</b>만 회복',
     onHit() {}
   },
   awaken: {
@@ -3437,7 +3438,7 @@ const CHAR_DB = {
     rarity: 'epic', color: '#54ed13', portrait: PORTRAITS.beam,
     ...CHARACTER_BALANCE.beam,
     customTick(caster, target, distance, dt) { return tickBeam(caster, target, distance, dt); },
-    skillDesc: '4초 조준 후 대상에게 0.2초마다 <b>100 피해</b>, 1초마다 피해 <b>+20</b>. 대상이 사거리 5.5칸을 벗어나면 빔·증가량 초기화'
+    skillDesc: '4초 조준 후 대상에게 0.2초마다 <b>50 피해</b>, 2초마다 피해 <b>+10</b>. 대상이 사거리 5.5칸을 벗어나면 빔·증가량 초기화'
   },
   mutation: {
     id: 'mutation', name: '돌연변이 지후', emoji: '🧬', role: 'controller', roleLabel: '컨트롤러',
@@ -3638,7 +3639,7 @@ function drawMinimap() {
   ctx.setLineDash([]);
   if (typeof state !== 'undefined' && state && state.units) {
     state.units.forEach(u => {
-      if (!u.alive || (state.enemyConcealed && u.side === 'enemy')) return;
+      if (!u.alive) return;
       ctx.fillStyle = u.side === 'ally' ? (light ? '#111' : '#fff') : (light ? '#888' : '#aaa');
       const rad = u.def && u.def.small ? 3 : 4.5;
       ctx.beginPath();
@@ -3775,7 +3776,10 @@ const state = {
   pool: [],
   allyBench: [],
   enemyBench: [],
-  enemyConcealed: false,
+  roundStartPlacements: [],
+  roundStartEnemyHiddenUsed: false,
+  roundStartReaperGrudges: {},
+  arenaRoundFormations: null,
   units: [],
   combatRAF: null,
   combatLastTs: 0,
@@ -4605,7 +4609,6 @@ function leaveBattle() {
   state.pendingPick = false;
   state.mergeSourceUid = null;
   pendingPoolIdx = null;
-  setEnemyConcealed(false);
   openPoolSheet(false);
   clearArenaUnits();
   resetBattlePresentation();
@@ -4951,6 +4954,7 @@ function startArenaMatch() {
     state.enemyLives = 1;
     state.myDeckIds = allies.map(entry => entry.id);
     state.enemyDeckIds = enemies.map(entry => entry.id);
+    state.arenaRoundFormations = { ally: allies.map(entry => ({ ...entry })), enemy: enemies.map(entry => ({ ...entry })) };
     state.matchSettled = false;
     state.lastSettlement = null;
     state.placements = [];
@@ -5308,6 +5312,10 @@ function startRound() {
   cancelRuntimeTasks();
   // 봇 히든은 네 번째 라운드부터 매 라운드 10%로 단 한 번 출전한다.
   state.placements = state.placements.filter(p => !(p.side === 'enemy' && p.charId === state.enemyHiddenId));
+  // 시간 종료 무승부 때 이번 라운드의 배치와 스킬 결과를 버리고 다시 편성한다.
+  state.roundStartPlacements = state.placements.map(p => ({ ...p }));
+  state.roundStartEnemyHiddenUsed = state.enemyHiddenUsed;
+  state.roundStartReaperGrudges = { ...state.reaperGrudges };
   state.enemyHiddenRound = !!(state.enemyHiddenId && !state.enemyHiddenUsed && state.round >= 4 && Math.random() < 0.1);
   state.oddsSamples = [];
   state.lastDeathPoint = null;
@@ -5408,14 +5416,6 @@ function clearArenaUnits() {
   document.querySelectorAll('.unit, .fx-pulse, .fx-dagger, .fx-projectile, .fx-burst, .fx-death-fx, .lone-radius-ring, .fx-slash, .fx-flame-stream, .fx-telegraph, .fx-charge-rect, .fx-lasso, .fx-mine, .fx-mine-blast, .fx-bolt, .fx-god-laser, .fx-hong-ball, .fx-smoke, .fx-dragon-fire, .fx-meteor, .fx-beam, .fx-orbit-satellite, .fx-dust-zone').forEach(el => el.remove()); if (state) state.mines = [];
 }
 
-function setEnemyConcealed(concealed) {
-  state.enemyConcealed = !!concealed && state.mode !== 'arena';
-  worldEl().classList.toggle('enemy-concealed', state.enemyConcealed);
-  $('oddsWrap').style.visibility = state.enemyConcealed ? 'hidden' : '';
-  lastMinimapPaint = -Infinity;
-  drawMinimap();
-}
-
 function completeDeployAction(delay = 700) {
   if (state.phase !== 'deploy') return;
   state.phase = 'deploy-resolve';
@@ -5424,15 +5424,13 @@ function completeDeployAction(delay = 700) {
   state.pendingPick = false;
   document.querySelectorAll('.pool-card').forEach(el => el.classList.add('picked'));
   enemyAutoDeployOne();
-  setEnemyConcealed(false);
   scheduleTask(nextDeployCycle, delay);
 }
 
 function nextDeployCycle() {
   state.deployRounds++;
-  if (state.deployRounds > 3) { setEnemyConcealed(false); beginCombatPhase(); return; }
+  if (state.deployRounds > 3) { beginCombatPhase(); return; }
   state.phase = 'deploy';
-  setEnemyConcealed(true);
   const allyCount = countedAlive('ally');
   $('bottomStatusLine').innerHTML = `배치 <b>${state.deployRounds}</b>/3 · 유닛 <b>${allyCount}</b>/${state.maxUnits}`;
 
@@ -6432,7 +6430,7 @@ function transformToFailedMutant(target) {
   target._mimicState = null;
   target._mimicDone = true;
   target._mutationTimer = 0;
-  target.el.classList.remove('mimic-original');
+  target.el.classList.remove('mimic-original', 'mimic-transformed');
   target.level = 1;
   target.maxHp = target.baseMaxHp = def.hp;
   target.hp = def.hp;
@@ -6474,6 +6472,7 @@ function transformMimic(u) {
   u.shield = u.maxShield = def.shield || 0;
   u._mimicState = { remaining: CHAR_DB.mimic.mimicDuration };
   u.el.classList.remove('mimic-original');
+  u.el.classList.add('mimic-transformed');
   battleAPI.setImage(u, def.portrait);
   readyRoundSkills(u);
   if (def.onRoundStart) def.onRoundStart(u, battleAPI);
@@ -6496,6 +6495,7 @@ function revertMimic(u) {
   u.shield = u.maxShield = 0;
   u._mimicState = null;
   u._mimicDone = true;
+  u.el.classList.remove('mimic-transformed');
   u.el.classList.add('mimic-original');
   battleAPI.setImage(u, def.portrait);
   physInitBody(u);
@@ -7241,10 +7241,13 @@ function readyRoundSkills(u) {
 }
 
 /* 전투 페이즈 */
+const COMBAT_TIME_LIMIT = 100;
+const CASTLE_ROUND_TIME_LIMIT = 30;
 function beginCombatPhase() {
   state.phase = 'combat';
   clearPhaseTimer();
-  $('phaseTimer').textContent = 'FIGHT';
+  $('phaseTimer').textContent = state.mode === 'castle' ? CASTLE_ROUND_TIME_LIMIT : COMBAT_TIME_LIMIT;
+  $('phaseTimer').classList.remove('urgent');
   openPoolSheet(false); $('allyLivesDisplay').style.display = 'flex';
   const btp = $('btnTogglePool'); if (btp) btp.style.display = 'none';
   const pa2 = document.getElementById('poolActions'); if (pa2) pa2.style.display = 'none';
@@ -7796,8 +7799,17 @@ function applyDamageRaw(target, amount, opts) {
 
 function combatTick(ts) {
   if (state.phase !== 'combat') return;
-  if (state.mode === 'castle' && ts - state.combatStartTs >= 30000) {
-    endRoundCombat(null);
+  const limit = state.mode === 'castle' ? CASTLE_ROUND_TIME_LIMIT : COMBAT_TIME_LIMIT;
+  const remaining = Math.max(0, Math.ceil(limit - (ts - state.combatStartTs) / 1000));
+  $('phaseTimer').textContent = remaining;
+  $('phaseTimer').classList.toggle('urgent', remaining <= 10);
+  if (remaining === 0) {
+    if (state.mode === 'castle') endRoundCombat(null);
+    else {
+      // 판정에는 화면에 보이는 정수 승률을 그대로 사용한다. 50:50은 재경기다.
+      const allyPercent = updateOddsBar();
+      endRoundCombat(allyPercent > 50 ? 'ally' : allyPercent < 50 ? 'enemy' : 'draw', true);
+    }
     return;
   }
   const rawDt = Math.min((ts - state.combatLastTs) / 1000, 0.1);
@@ -8218,7 +8230,7 @@ function performHeal(caster, target) {
     while (ang > Math.PI) ang -= Math.PI * 2;
     while (ang < -Math.PI) ang += Math.PI * 2;
     if (Math.abs(ang) > half) return;
-    const healAmt = caster.def.healAmount * supportMult(caster);
+    const healAmt = caster.def.healAmount * supportMult(caster) * (a === caster ? 0.1 : 1);
     a.hp = Math.min(a.maxHp, a.hp + healAmt);
     updateUnitBars(a);
     spawnDamageNumber(a, Math.round(healAmt), { heal: true });
@@ -9049,7 +9061,7 @@ function beginFinalMoment(winnerSide) {
   scheduleTask(() => endRoundCombat(winnerSide), 2000);
 }
 
-function endRoundCombat(winnerSide) {
+function endRoundCombat(winnerSide, timedOut = false) {
   cancelRuntimeTasks();
   state.phase = 'roundEnd';
   $('battleArena').classList.remove('final-moment');
@@ -9075,6 +9087,39 @@ function endRoundCombat(winnerSide) {
     return;
   }
 
+  if (timedOut && winnerSide === 'draw') {
+    const overlay = $('roundOverlay');
+    $('resultTitle').textContent = 'DRAW';
+    $('resultTitle').className = 'result-title';
+    $('resultSub').textContent = '100초 종료 · 승률 50:50 · 같은 라운드 재시작';
+    $('lifeTransition').innerHTML = '';
+    overlay.classList.add('show');
+    scheduleTask(() => {
+      overlay.classList.remove('show');
+      if (state.mode === 'arena') {
+        clearArenaUnits();
+        state.units = [];
+        state.smokeZones = [];
+        state.dustZones = [];
+        state.fireTrails = [];
+        state.pendingExplosions = [];
+        state.pendingMeteors = [];
+        state.deadThisRound = { ally: [], enemy: [] };
+        state.reaperGrudges = {};
+        placeFormation('ally', state.arenaRoundFormations.ally);
+        placeFormation('enemy', state.arenaRoundFormations.enemy);
+        applyMapLayout();
+        beginCombatPhase();
+      } else {
+        state.placements = state.roundStartPlacements.map(p => ({ ...p }));
+        state.enemyHiddenUsed = state.roundStartEnemyHiddenUsed;
+        state.reaperGrudges = { ...state.roundStartReaperGrudges };
+        startRound();
+      }
+    }, 1800);
+    return;
+  }
+
   const previousAllyLives = state.allyLives;
   const previousEnemyLives = state.enemyLives;
   if (winnerSide === 'ally') state.enemyLives = Math.max(0, state.enemyLives - 1);
@@ -9087,8 +9132,8 @@ function endRoundCombat(winnerSide) {
   const afterLives = lifeSide === 'enemy' ? state.enemyLives : state.allyLives;
   $('lifeTransition').innerHTML = lifeSide ? Array.from({ length: beforeLives }, (_, i) => `<span class="life-pip on ${lifeSide}${i >= afterLives ? ' lost' : ''}"></span>`).join('') : '';
   if (state.mode === 'arena') {
-    if (winnerSide === 'ally') { title.textContent = 'WIN'; title.className = 'result-title win'; sub.textContent = '투기장 전멸전 승리'; }
-    else if (winnerSide === 'enemy') { title.textContent = 'LOSE'; title.className = 'result-title lose'; sub.textContent = '투기장 전멸전 패배'; }
+    if (winnerSide === 'ally') { title.textContent = 'WIN'; title.className = 'result-title win'; sub.textContent = timedOut ? '100초 종료 · 승률 우세' : '투기장 전멸전 승리'; }
+    else if (winnerSide === 'enemy') { title.textContent = 'LOSE'; title.className = 'result-title lose'; sub.textContent = timedOut ? '100초 종료 · 상대 승률 우세' : '투기장 전멸전 패배'; }
     else { title.textContent = 'DRAW'; title.className = 'result-title'; sub.textContent = '양쪽 전멸 — 무승부'; }
     overlay.classList.add('show');
     scheduleTask(() => {
@@ -9098,8 +9143,8 @@ function endRoundCombat(winnerSide) {
     return;
   }
 
-  if (winnerSide === 'ally') { title.textContent = 'WIN'; title.className = 'result-title win'; sub.textContent = `적 라이프 -1 (남은 라이프 ${state.enemyLives})`; }
-  else if (winnerSide === 'enemy') { title.textContent = 'LOSE'; title.className = 'result-title lose'; sub.textContent = `내 라이프 -1 (남은 라이프 ${state.allyLives})`; }
+  if (winnerSide === 'ally') { title.textContent = 'WIN'; title.className = 'result-title win'; sub.textContent = `${timedOut ? '100초 종료 · 승률 우세 · ' : ''}적 라이프 -1 (남은 라이프 ${state.enemyLives})`; }
+  else if (winnerSide === 'enemy') { title.textContent = 'LOSE'; title.className = 'result-title lose'; sub.textContent = `${timedOut ? '100초 종료 · 상대 승률 우세 · ' : ''}내 라이프 -1 (남은 라이프 ${state.allyLives})`; }
   else { title.textContent = 'DRAW'; title.className = 'result-title'; sub.textContent = '무승부'; }
   overlay.classList.add('show');
 
@@ -9182,7 +9227,8 @@ const PATCH_NOTES = {
         { emoji:'🤖', name:'봇 히든 지후', tag:'system', color:'#777', desc:'봇은 1% 확률로 히든을 보유하며 4라운드부터 라운드당 10% 확률로 단 1회 등장합니다.' },
         { emoji:'⌘', name:'개발자 모드', tag:'system', color:'#777', desc:'설정에서 비밀번호를 인증하면 모든 지후, 재화 추가, 투기장을 사용할 수 있습니다.' },
         { emoji:'✨', name:'뽑기 연출', tag:'system', color:'#777', desc:'등급별 카드 색 변화, 전설 플래시, 히든 3초 암전과 흔들림 연출을 추가했습니다.' },
-        { emoji:'⚔️', name:'동시 배치', tag:'system', color:'#777', desc:'아군이 배치·업그레이드·스킵하기 전까지 상대 진영을 감춥니다. 행동을 마치면 상대도 동시에 배치합니다.' },
+        { emoji:'⚔️', name:'동시 배치', tag:'system', color:'#777', desc:'상대 진영을 항상 볼 수 있습니다. 아군이 배치·업그레이드·스킵하면 상대도 즉시 행동합니다.' },
+        { emoji:'⏱️', name:'100초 라운드 타이머', tag:'system', color:'#777', desc:'일반 전투와 투기장은 100초가 끝나면 표시된 승률이 높은 팀이 이깁니다. 50:50이면 라이프 변화 없이 같은 라운드를 다시 시작합니다. 성뿌수기는 기존 30초 규칙을 유지합니다.' },
         { emoji:'🏆', name:'리더보드', tag:'system', color:'#777', desc:'레벨과 전적, 최근 덱 초상화를 순위 화면에서 바로 확인할 수 있습니다.' },
         { emoji:'❤️', name:'체력바', tag:'system', color:'#777', desc:'아군은 초록색, 적군은 빨간색으로 표시되도록 수정했습니다.' }
       ] },
@@ -9190,7 +9236,10 @@ const PATCH_NOTES = {
         { emoji:'⚾', name:'빠따 지후', tag:'adjust', color:'#d43fd4', portraitKey:'bat', desc:'공격 전 3초간 붉은 부채꼴 범위를 보여줍니다. 넉백 거리는 5칸에서 3칸으로 줄었습니다.' },
         { emoji:'🕹️', name:'오락기 지후', tag:'buff', color:'#ff4fd8', portraitKey:'arcade', desc:'HP 3,300 → 6,300.' },
         { emoji:'🛰️', name:'인공위성 지후', tag:'nerf', color:'#b68f73', portraitKey:'satellite', desc:'아군에게 주는 쉴드 2,000 → 1,000.' },
-        { emoji:'💣', name:'지뢰 지후', tag:'buff', color:'#7a3cff', portraitKey:'mine', desc:'한 번에 지뢰 3개를 설치합니다. 피해는 500 + 대상 현재 HP의 50%, 기절은 5초입니다.' }
+        { emoji:'💣', name:'지뢰 지후', tag:'buff', color:'#7a3cff', portraitKey:'mine', desc:'한 번에 지뢰 3개를 설치합니다. 피해는 500 + 대상 현재 HP의 50%, 기절은 5초입니다.' },
+        { emoji:'🔦', name:'빔 지후', tag:'nerf', color:'#54ed13', portraitKey:'beam', desc:'빔 1타 피해 100 → 50, 증가량은 매 1초 +20에서 매 2초 +10으로 변경했습니다.' },
+        { emoji:'💉', name:'힐 지후', tag:'nerf', color:'#4ae0c4', portraitKey:'medic', desc:'자신에게 주는 회복은 다른 아군에게 주는 회복량의 10%입니다.' },
+        { emoji:'🌈', name:'미믹 지후', tag:'adjust', color:'#8d879e', desc:'변신 상태의 원형 테두리가 무지개색으로 점멸합니다.' }
       ] }
     ]
   },
@@ -10146,6 +10195,7 @@ function updateOddsBar() {
   $('oddsHpLab').textContent = castleMode
     ? `예상 우세 · 적 성 ${Math.round(enemyHealth).toLocaleString()} : 아군 성 ${Math.round(allyHealth).toLocaleString()} · 화력 반영`
     : `예상 우세 · 적 생존 ${enemy.count} : 아군 생존 ${ally.count} · 체력·화력·최근 피해 반영`;
+  return percent;
 }
 function renderStatsPanel() {
   const body = $('statsBody');
